@@ -14,7 +14,7 @@
         android:layout_height="105dp"
         android:layout_marginTop="44dp"
         android:fontFamily="@font/lato_black"
-        android:text="Dispositivo Conectado"
+        android:text="EcoSwitch Conectado"
         android:textAlignment="center"
         android:textAllCaps="false"
         android:textColor="#FCFFFFFF"

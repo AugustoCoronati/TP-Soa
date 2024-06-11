@@ -15,7 +15,7 @@
         android:layout_width="263dp"
         android:layout_height="105dp"
         android:fontFamily="@font/lato_black"
-        android:text="Dispositivo Desconectado"
+        android:text="EcoSwitch Desconectado"
         android:textAlignment="center"
         android:textAllCaps="false"
         android:textColor="#FCFFFFFF"
