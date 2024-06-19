@@ -34,7 +34,6 @@
         android:layout_marginBottom="92dp"
         android:backgroundTint="#000000"
         android:fontFamily="@font/lato_bold"
-        android:onClick="goToSecondActivity"
         android:text="Ingresar"
         android:textAlignment="center"
         android:textSize="24sp"
