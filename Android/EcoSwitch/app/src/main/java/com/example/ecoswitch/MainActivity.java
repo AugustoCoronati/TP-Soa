@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import android.Manifest;
+import android.accessibilityservice.TouchInteractionController;
 import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -13,6 +14,10 @@ import android.content.IntentFilter;
 
 import android.content.pm.PackageManager;
 
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
@@ -29,7 +34,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 @RequiresApi(api = Build.VERSION_CODES.S)
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements SensorEventListener {
     private Button btnIngresar;
 
     private BluetoothAdapter mBluetoothAdapter;
@@ -43,6 +48,12 @@ public class MainActivity extends Activity {
             Manifest.permission.BLUETOOTH_SCAN,
             Manifest.permission.READ_PHONE_STATE,
     };
+
+    private SensorManager sensorManager;
+    private Sensor accelerometer;
+    private static final float SHAKE_THRESHOLD = 12.0f;
+    private static final int MIN_TIME_BETWEEN_SHAKES_MILLISECS = 1000;
+    private long lastShakeTime;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,6 +77,13 @@ public class MainActivity extends Activity {
                 startActivity(intent);
             }
         });
+
+        //sensor
+        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        if (sensorManager != null) {
+            accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        }
+
     }
 
     protected void enableComponent() {
@@ -83,6 +101,9 @@ public class MainActivity extends Activity {
     @Override
     public void onPause() {
         super.onPause();
+        if (accelerometer != null) {
+            sensorManager.unregisterListener(this);
+        }
     }
 
     @Override
@@ -90,6 +111,14 @@ public class MainActivity extends Activity {
         unregisterReceiver(mReceiver);
 
         super.onDestroy();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (accelerometer != null) {
+            sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        }
     }
 
 
@@ -155,5 +184,39 @@ public class MainActivity extends Activity {
                 return;
             }
         }
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            float x = event.values[0];
+            float y = event.values[1];
+            float z = event.values[2];
+
+            float acceleration = (float) Math.sqrt(x * x + y * y + z * z) - SensorManager.GRAVITY_EARTH;
+
+            long currentTime = System.currentTimeMillis();
+            if (acceleration > SHAKE_THRESHOLD && (currentTime - lastShakeTime) > MIN_TIME_BETWEEN_SHAKES_MILLISECS) {
+                lastShakeTime = currentTime;
+                onShake();
+            }
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int i) {
+
+    }
+    private void onShake() {
+        // Aquí llamamos a la función que queremos ejecutar al detectar el shake
+        // Determinar cuál botón está visible y llamar al OnClickListener correspondiente
+        if (findViewById(R.id.button).getVisibility() == View.VISIBLE) {
+            findViewById(R.id.button).performClick(); // Simula un clic en btnActivar
+        } else {
+            findViewById(R.id.button3).performClick(); // Simula un clic en Suspender
+        }
+        //en el unico estado que estan disibles los dos es en desconectado
+        //le di prioridad a conectarlo con el shake, no a suspenderlo
+        //si se quiere suspender desde descoenctado, es con el boton
     }
 }

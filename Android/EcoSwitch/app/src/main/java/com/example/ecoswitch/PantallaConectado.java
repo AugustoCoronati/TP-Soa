@@ -2,9 +2,15 @@ package com.example.ecoswitch;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
+import android.content.Context;
+import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -15,6 +21,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.core.app.NotificationCompat;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -63,6 +70,9 @@ public class PantallaConectado extends Activity
     // String for MAC address del Hc05
     private static String address = "00:22:06:01:9C:DA";
 
+    private static final String CHANNEL_ID = "12345";
+
+
     @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -91,6 +101,35 @@ public class PantallaConectado extends Activity
         btnSuspender.setOnClickListener(btnSuspenderListener);
         btnActivar.setOnClickListener(btnActivarListener);
 
+        createNotificationChannel();
+
+    }
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = "MiCanal";
+            String description = "Canal para notificaciones";
+            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
+            channel.setDescription(description);
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        }
+    }
+    private void sendNotification(String title, String content) {
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setSmallIcon(R.drawable.enchufe__1_) //icono
+                .setContentTitle(title)
+                .setContentText(content)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true); // Elimina la notificación cuando se pulsa
+
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.notify(1, builder.build());
     }
 
     @SuppressLint("MissingPermission")
@@ -211,7 +250,7 @@ public class PantallaConectado extends Activity
 
             case ESTADO_DETECTANDO_INACTIVIDAD:
                 btnSuspender.setVisibility(View.VISIBLE); //se puede suspender
-                btnActivar.setVisibility(View.VISIBLE); //Se puede activar
+                btnActivar.setVisibility(View.GONE); //no se puede activar pq esta activo
 
                 txtEstadoEcoSwitch.setText(R.string.detectando_inactividad); //cambio estado
                 txtEstadoDispositivo.setText(R.string.dispositivo_apagado); //cambio estado
@@ -224,7 +263,7 @@ public class PantallaConectado extends Activity
                 break;
             case ESTADO_CONECTADO:
                 btnSuspender.setVisibility(View.GONE); //no se puede suspender pq tv prendida
-                btnActivar.setVisibility(View.GONE); //no se puede activar
+                btnActivar.setVisibility(View.GONE); //no se puede activar pq esta activo
 
                 txtEstadoEcoSwitch.setText(R.string.estado_conectado); //cambio estado
                 txtEstadoDispositivo.setText(R.string.dispositivo_encendido); //cambio estado
@@ -235,8 +274,8 @@ public class PantallaConectado extends Activity
                 ImgFantasma.setVisibility((View.GONE));
                 break;
             case ESTADO_CONSUMO_DESPERDICIADO:
-                btnSuspender.setVisibility(View.GONE); //no se puede suspender pq tev prendida
-                btnActivar.setVisibility(View.GONE); //no se puede activar
+                btnSuspender.setVisibility(View.GONE); //no se puede suspender pq tv prendida
+                btnActivar.setVisibility(View.GONE); //no se puede activar pq esta activo
 
                 txtEstadoEcoSwitch.setText(R.string.estado_conectado); //cambio estado
                 txtEstadoDispositivo.setText(R.string.dispositivo_encendido); //cambio estado
@@ -249,10 +288,11 @@ public class PantallaConectado extends Activity
 
 
                 //aca va notificacion (Logica del sensor de proximidad, hacer sonar alarma en el celu)
+                sendNotification("EcoSwicth", String.valueOf(R.string.descripcion_extra_consum_desper));
                 break;
             case ESTADO_CONSUMO_FANTASMA:
                 btnSuspender.setVisibility(View.VISIBLE); //se puede suspender
-                btnActivar.setVisibility(View.GONE); //no se puede activar
+                btnActivar.setVisibility(View.GONE); //no se puede activar pq esta activo
 
                 txtEstadoEcoSwitch.setText(R.string.estado_conectado); //cambio estado
                 txtEstadoDispositivo.setText(R.string.dispositivo_apagado); //cambio estado
@@ -278,12 +318,11 @@ public class PantallaConectado extends Activity
         @Override
         public void onClick(View v) {
             mConnectedThread.write("D");
-            //ACA TOCO MAR
             btnSuspender.setVisibility(View.GONE); //no se suspender
             txtEstadoEcoSwitch.setText(R.string.estado_suspendido); //cambio estado
             txtEstadoDispositivo.setText(R.string.dispositivo_apagado); //cambio estado
             txtDescripcionExtra.setVisibility(View.GONE); //saco lo de abajo
-            btnActivar.setVisibility(View.VISIBLE); //que se vea ese
+            btnActivar.setVisibility(View.VISIBLE); //se puede conectar
             ImgApagado.setVisibility(View.VISIBLE); //pongo fotito apagado
             ImgPrendido.setVisibility(View.GONE); //pongo fotito apagado
             ImgFantasma.setVisibility((View.GONE));
@@ -296,9 +335,8 @@ public class PantallaConectado extends Activity
         @Override
         public void onClick(View v) {
             mConnectedThread.write("C");
-            //ACA TOCO MAR
             btnSuspender.setVisibility(View.VISIBLE); //se puede suspender
-            btnActivar.setVisibility(View.GONE); //no, ya esta activado
+            btnActivar.setVisibility(View.GONE); //no se puede activar pq esta activo
 
             txtEstadoEcoSwitch.setText(R.string.estado_conectado); //cambio estado
             txtEstadoDispositivo.setText(R.string.dispositivo_encendido); //cambio estado
