@@ -12,7 +12,7 @@
         android:id="@+id/textView"
         android:layout_width="345dp"
         android:layout_height="124dp"
-        android:fontFamily="@font/lato_light"
+        android:fontFamily="@font/lato_light_"
         android:gravity="center_horizontal"
         android:lineSpacingExtra="0sp"
         android:text="Bienvenido a EcoSwitch"
@@ -33,12 +33,13 @@
         android:layout_width="211dp"
         android:layout_height="89dp"
         android:layout_marginBottom="92dp"
-        android:backgroundTint="#000000"
-        android:fontFamily="@font/lato_bold"
+        android:backgroundTint="@color/material_dynamic_neutral0"
+        android:fontFamily="@font/lato_bold_"
         android:gravity="center"
         android:text="Ingresar"
         android:textAlignment="center"
         android:textSize="24sp"
+        app:backgroundTint="@color/blackk"
         app:backgroundTintMode="screen"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -52,6 +53,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/enchufe__1_" />
+        android:src="@drawable/enchufe__1_"/>
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>
