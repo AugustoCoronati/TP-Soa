@@ -6,9 +6,9 @@
     <string name="next">Next</string>
     <string name="previous">Previous</string>
 
-    <string name="estado_conectado">EcoSwitch Conectado</string>
-    <string name="estado_desconectado">EcoSwitch Desconectado</string>
-    <string name="estado_suspendido">EcoSwitch Suspendido</string>
+    <string name="estado_conectado">Conectado</string>
+    <string name="estado_desconectado">Desconectado</string>
+    <string name="estado_suspendido">Suspendido</string>
     <string name="dispositivo_apagado">Dispositivo apagado</string>
     <string name="dispositivo_encendido">Dispositivo encendido</string>
     <string name="detectando_inactividad">Detectando Inactividad</string>

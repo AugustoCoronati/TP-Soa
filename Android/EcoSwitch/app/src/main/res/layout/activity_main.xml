@@ -12,7 +12,7 @@
         android:id="@+id/textView"
         android:layout_width="345dp"
         android:layout_height="124dp"
-        android:fontFamily="@font/lato_light_"
+        android:fontFamily="@font/lato_light"
         android:gravity="center_horizontal"
         android:lineSpacingExtra="0sp"
         android:text="Bienvenido a EcoSwitch"
@@ -22,38 +22,58 @@
         android:textSize="48sp"
         android:textStyle="bold"
         android:typeface="sans"
-        app:layout_constraintBottom_toTopOf="@+id/button2"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/imageView"
-        app:layout_constraintVertical_bias="0.506" />
+        app:layout_constraintVertical_bias="0.192" />
 
     <Button
         android:id="@+id/button2"
         android:layout_width="211dp"
         android:layout_height="89dp"
-        android:layout_marginBottom="92dp"
-        android:backgroundTint="@color/material_dynamic_neutral0"
-        android:fontFamily="@font/lato_bold_"
+        android:backgroundTint="#000000"
+        android:fontFamily="@font/lato_bold"
         android:gravity="center"
         android:text="Ingresar"
         android:textAlignment="center"
+        android:textColor="@color/white"
         android:textSize="24sp"
-        app:backgroundTint="@color/blackk"
+        app:backgroundTint="@color/white"
         app:backgroundTintMode="screen"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.834" />
 
     <ImageView
         android:id="@+id/imageView"
-        android:layout_width="153dp"
-        android:layout_height="123dp"
+        android:layout_width="190dp"
+        android:layout_height="160dp"
         android:layout_marginTop="88dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        android:src="@drawable/enchufe__1_"/>
+        app:srcCompat="@drawable/enchufe__1_" />
 
+    <Button
+        android:id="@+id/button4"
+        android:layout_width="211dp"
+        android:layout_height="89dp"
+        android:backgroundTint="#000000"
+        android:fontFamily="@font/lato_bold"
+        android:gravity="center"
+        android:text="Conectar Bluetooth"
+        android:textAlignment="center"
+        android:textColor="@color/white"
+        android:textSize="24sp"
+        app:backgroundTint="@color/white"
+        app:backgroundTintMode="screen"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.834" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

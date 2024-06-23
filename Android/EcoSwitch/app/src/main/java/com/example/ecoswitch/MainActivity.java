@@ -21,6 +21,7 @@ import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
+import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.Activity;
 import android.widget.Button;
@@ -32,10 +33,14 @@ import android.bluetooth.BluetoothAdapter;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 @RequiresApi(api = Build.VERSION_CODES.S)
-public class MainActivity extends Activity implements SensorEventListener {
+public class MainActivity extends AppCompatActivity /*implements SensorEventListener*/ {
     private Button btnIngresar;
+    private Button btnConectar;
 
     private BluetoothAdapter mBluetoothAdapter;
 
@@ -49,11 +54,6 @@ public class MainActivity extends Activity implements SensorEventListener {
             Manifest.permission.READ_PHONE_STATE,
     };
 
-    private SensorManager sensorManager;
-    private Sensor accelerometer;
-    private static final float SHAKE_THRESHOLD = 12.0f;
-    private static final int MIN_TIME_BETWEEN_SHAKES_MILLISECS = 1000;
-    private long lastShakeTime;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,34 +61,43 @@ public class MainActivity extends Activity implements SensorEventListener {
 
         setContentView(R.layout.activity_main);
 
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
+
         btnIngresar = (Button) findViewById(R.id.button2);
+        btnConectar= (Button) findViewById(R.id.button4);
 
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
         if (checkPermissions()) {
             enableComponent();
         }
-
-        btnIngresar.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Crear un Intent para iniciar la nueva Activity
-                Intent intent = new Intent(MainActivity.this, PantallaConectado.class);
-                startActivity(intent);
-            }
-        });
-
-        //sensor
-        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        if (sensorManager != null) {
-            accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        }
-
     }
 
     protected void enableComponent() {
         if (mBluetoothAdapter == null) {
             showUnsupported();
+        }
+        else
+        {
+            btnConectar.setOnClickListener(btnConectarListener);
+            btnIngresar.setOnClickListener(btnIngresarListener);
+
+            //se determina si esta activado el bluetooth
+            if (mBluetoothAdapter.isEnabled())
+            {
+                showToast("Bluetooth Activado");
+                showEnabled();
+            }
+            else
+            {
+                showToast("Bluetooth Desactivado");
+                showDisabled();
+            }
+
         }
 
         IntentFilter filter = new IntentFilter();
@@ -97,13 +106,24 @@ public class MainActivity extends Activity implements SensorEventListener {
         registerReceiver(mReceiver, filter);
     }
 
+    private void showEnabled() {
+
+        btnConectar.setVisibility(View.GONE);
+        btnIngresar.setVisibility(View.VISIBLE);
+
+    }
+
+    private void showDisabled() {
+
+        btnConectar.setVisibility(View.VISIBLE);
+        btnIngresar.setVisibility(View.GONE);
+    }
+
+
     @SuppressLint("MissingPermission")
     @Override
     public void onPause() {
         super.onPause();
-        if (accelerometer != null) {
-            sensorManager.unregisterListener(this);
-        }
     }
 
     @Override
@@ -116,9 +136,6 @@ public class MainActivity extends Activity implements SensorEventListener {
     @Override
     protected void onResume() {
         super.onResume();
-        if (accelerometer != null) {
-            sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
-        }
     }
 
 
@@ -141,12 +158,41 @@ public class MainActivity extends Activity implements SensorEventListener {
 
                 if (state == BluetoothAdapter.STATE_ON) {
                     showToast("Bluetooth Activado");
+                    showEnabled();
 
                 } else if (state == BluetoothAdapter.STATE_OFF) {
                     showToast("Bluetooth Desactivado");
+                    showDisabled();
 
                 }
             }
+        }
+    };
+
+    private final View.OnClickListener btnConectarListener = new View.OnClickListener() {
+        @SuppressLint("MissingPermission")
+        @Override
+        public void onClick(View v) {
+            if (mBluetoothAdapter.isEnabled()) {
+                mBluetoothAdapter.disable();
+
+                showDisabled();
+            } else {
+                Intent intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+
+                startActivityForResult(intent, 1000);
+            }
+        }
+    };
+
+
+    private final View.OnClickListener btnIngresarListener = new View.OnClickListener() {
+        @SuppressLint("MissingPermission")
+        @Override
+        public void onClick(View v) {
+            // Crear un Intent para iniciar la nueva Activity
+            Intent intent = new Intent(MainActivity.this, PantallaConectado.class);
+            startActivity(intent);
         }
     };
 
@@ -170,6 +216,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         switch (requestCode) {
             case MULTIPLE_PERMISSIONS: {
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -184,39 +231,5 @@ public class MainActivity extends Activity implements SensorEventListener {
                 return;
             }
         }
-    }
-
-    @Override
-    public void onSensorChanged(SensorEvent event) {
-        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-            float x = event.values[0];
-            float y = event.values[1];
-            float z = event.values[2];
-
-            float acceleration = (float) Math.sqrt(x * x + y * y + z * z) - SensorManager.GRAVITY_EARTH;
-
-            long currentTime = System.currentTimeMillis();
-            if (acceleration > SHAKE_THRESHOLD && (currentTime - lastShakeTime) > MIN_TIME_BETWEEN_SHAKES_MILLISECS) {
-                lastShakeTime = currentTime;
-                onShake();
-            }
-        }
-    }
-
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int i) {
-
-    }
-    private void onShake() {
-        // Aquí llamamos a la función que queremos ejecutar al detectar el shake
-        // Determinar cuál botón está visible y llamar al OnClickListener correspondiente
-        if (findViewById(R.id.button).getVisibility() == View.VISIBLE) {
-            findViewById(R.id.button).performClick(); // Simula un clic en btnActivar
-        } else {
-            findViewById(R.id.button3).performClick(); // Simula un clic en Suspender
-        }
-        //en el unico estado que estan disibles los dos es en desconectado
-        //le di prioridad a conectarlo con el shake, no a suspenderlo
-        //si se quiere suspender desde descoenctado, es con el boton
     }
 }
