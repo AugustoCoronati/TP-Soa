@@ -31,10 +31,6 @@ SoftwareSerial BTserial(10, 11);  // RX | TX
 #define TMP_BUZZER2 500
 
 // Características Sensor de corriente-------------
-#define SENSIBILIDAD 0.100
-#define TENSION_MINIMA 2.5
-#define CORRIENTE_MAXIMA 20
-#define ANALOG_READ_MAX 1023
 #define CORRIENTE_FANTASMA 150
 #define SIN_CORRIENTE 0.00
 
@@ -164,8 +160,6 @@ unsigned long tiempo_parpadeo_actual;
 unsigned long tiempo_anterior_buzzer = 0;
 bool estado_buzzer = LOW;
 
-bool manejo_log = true;
-
 // ================================================
 // CAPTURA DE EVENTOS ------------------------------
 
@@ -173,13 +167,11 @@ void leer_sensor_corriente() {
   float corriente;
 
   corriente = analogRead(sensor_corriente.pin);
-  itoa(corriente, sensor_corriente.valor, 10);
 
   if (corriente >= SIN_CORRIENTE && corriente <= CORRIENTE_FANTASMA) {
     sensor_corriente.estado = ESTADO_SENSOR_CORRIENTE_FANTASMA;
     evento.tipo = EVENTO_TV_APAGADA;
   }
-
   else {
     sensor_corriente.estado = ESTADO_SENSOR_CON_CORRIENTE;
     evento.tipo = EVENTO_TV_PRENDIDA;
@@ -234,9 +226,7 @@ bool leer_serial() {
     } else if (lectura == 'D') {
       evento.tipo = EVENTO_DESCONEXION_MANUAL;
       return true;
-    } else if (lectura == 'L') {
-      manejo_log = !manejo_log;
-    }
+    } 
   }
 
   return false;
