@@ -20,7 +20,6 @@ SoftwareSerial BTserial(10, 11);  // RX | TX
 #define BRILLO_100_POR_CIENTO 255
 
 // Frecuencias Buzzer -----------------------------
-//#define FREC_APAGADO 0
 #define FRECUENCIA_BUZZER 494
 
 // Temporizadores----------------------------------
@@ -106,7 +105,7 @@ typedef struct sensor_movimiento_s {
 typedef struct sensor_corriente_s {
   int pin;
   int estado;
-  char valor[5];
+  int valor;
 } sensor_corriente_t;
 
 typedef struct sensor_pulsador_s {
@@ -156,9 +155,6 @@ unsigned long tiempo_actual_contador;
 
 unsigned long tiempo_parpadeo_anterior;
 unsigned long tiempo_parpadeo_actual;
-
-unsigned long tiempo_anterior_buzzer = 0;
-bool estado_buzzer = LOW;
 
 // ================================================
 // CAPTURA DE EVENTOS ------------------------------
@@ -518,7 +514,7 @@ void fsm() {
           break;
 
         case EVENTO_DESCONEXION_MANUAL:
-          ;
+          
           break;
 
         default:
