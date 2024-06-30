@@ -6,6 +6,15 @@
     <string name="next">Next</string>
     <string name="previous">Previous</string>
 
+    <string name="estado_conectado">Conectado</string>
+    <string name="estado_desconectado">Desconectado</string>
+    <string name="estado_suspendido">Suspendido</string>
+    <string name="dispositivo_apagado">Dispositivo apagado</string>
+    <string name="dispositivo_encendido">Dispositivo encendido</string>
+    <string name="detectando_inactividad">Detectando Inactividad</string>
+    <string name="descripcion_extra_detectando_inactividad">El dispositivo se encuentra apagado y nadie lo está utilizando</string>
+    <string name="descripcion_extra_consum_desper">El dispositivo se encuentra encendido y nadie lo está utilizando</string>
+
     <string name="lorem_ipsum">
         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam in scelerisque sem. Mauris
         volutpat, dolor id interdum ullamcorper, risus dolor egestas lectus, sit amet mattis purus

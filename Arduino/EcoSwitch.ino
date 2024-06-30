@@ -20,20 +20,16 @@ SoftwareSerial BTserial(10, 11);  // RX | TX
 #define BRILLO_100_POR_CIENTO 255
 
 // Frecuencias Buzzer -----------------------------
-#define FREC_APAGADO 0
-#define FREC_ENCENDIDO 200
+#define FRECUENCIA_BUZZER 494
 
 // Temporizadores----------------------------------
-#define TMP_EVENTOS_MILI 100
+#define TMP_EVENTOS_MILI 1000
 #define TMP_AUSENCIA_MILI 10000
 #define TMP_PARPADEO_LED 200
-#define TMP_BUZZER 200
+#define TMP_BUZZER 400
+#define TMP_BUZZER2 500
 
 // Características Sensor de corriente-------------
-#define SENSIBILIDAD 0.100
-#define TENSION_MINIMA 2.5
-#define CORRIENTE_MAXIMA 20
-#define ANALOG_READ_MAX 1023
 #define CORRIENTE_FANTASMA 150
 #define SIN_CORRIENTE 0.00
 
@@ -109,7 +105,7 @@ typedef struct sensor_movimiento_s {
 typedef struct sensor_corriente_s {
   int pin;
   int estado;
-  char valor[5];
+  int valor;
 } sensor_corriente_t;
 
 typedef struct sensor_pulsador_s {
@@ -160,22 +156,6 @@ unsigned long tiempo_actual_contador;
 unsigned long tiempo_parpadeo_anterior;
 unsigned long tiempo_parpadeo_actual;
 
-unsigned long tiempo_anterior_buzzer = 0;
-bool estado_buzzer = LOW;
-
-bool manejo_log = true;
-
-void print(const char *cadena1, const char *cadena2, const char *cadena3) {
-  if (manejo_log == true) {
-    BTserial.write(cadena1);
-    BTserial.write(", ");
-    BTserial.write(cadena2);
-    BTserial.write(", ");
-    BTserial.write(cadena3);
-    BTserial.write("\n");
-  }
-}
-
 // ================================================
 // CAPTURA DE EVENTOS ------------------------------
 
@@ -183,14 +163,11 @@ void leer_sensor_corriente() {
   float corriente;
 
   corriente = analogRead(sensor_corriente.pin);
-  itoa(corriente, sensor_corriente.valor, 10);
-  //sensor_corriente.valor = String(corriente);
 
   if (corriente >= SIN_CORRIENTE && corriente <= CORRIENTE_FANTASMA) {
     sensor_corriente.estado = ESTADO_SENSOR_CORRIENTE_FANTASMA;
     evento.tipo = EVENTO_TV_APAGADA;
   }
-
   else {
     sensor_corriente.estado = ESTADO_SENSOR_CON_CORRIENTE;
     evento.tipo = EVENTO_TV_PRENDIDA;
@@ -245,9 +222,7 @@ bool leer_serial() {
     } else if (lectura == 'D') {
       evento.tipo = EVENTO_DESCONEXION_MANUAL;
       return true;
-    } else if (lectura == 'L') {
-      manejo_log = !manejo_log;
-    }
+    } 
   }
 
   return false;
@@ -292,8 +267,8 @@ void actualizar_led(int porcentaje_pwm) {
   analogWrite(actuador_led.pin, porcentaje_pwm);
 }
 
-void sonar_alarma() {
-  tone(actuador_buzzer.pin, 494, 400);
+void sonar_alarma(int tiempo) {
+  tone(actuador_buzzer.pin, FRECUENCIA_BUZZER, tiempo);
 }
 
 void titilar_led() {
@@ -363,32 +338,27 @@ void fsm() {
       switch (evento.tipo) {
         case EVENTO_BOTON_PULSADO:
 
-          BTserial.write("NO SE PUEDE QUITAR LA CORRIENTE PORQUE LA TV DE ENCUENTRA ENCENDIDA\n");
-          print("ESTADO_CONECTADO", "EVENTO_BOTON_PULSADO", "paso a ESTADO_CONECTADO");
+          BTserial.write("ESTADO_CONECTADO\n");
           break;
 
         case EVENTO_AUSENCIA_DETECTADA:
 
-          BTserial.write("LA TV ESTA ENCENDIDA Y NO SE DETECTAN PERSONAS UTILIZANDOLA\n");
-          print("ESTADO_CONECTADO", "EVENTO_AUSENCIA_DETECTADA", "Paso a ESTADO_AUSENCIA");
+          BTserial.write("ESTADO_CONECTADO\n");
           estado_actual = ESTADO_AUSENCIA;
           break;
 
         case EVENTO_DESCONEXION_MANUAL:
 
-          BTserial.write("NO SE PUEDE QUITAR LA CORRIENTE PORQUE LA TV DE ENCUENTRA ENCENDIDA\n");
-          print("ESTADO_CONECTADO", "EVENTO_DESCONEXION_MANUAL", "Paso a ESTADO_CONECTADO");
+          BTserial.write("ESTADO_CONECTADO\n");
           break;
 
         case EVENTO_CONEXION_MANUAL:
 
-          BTserial.write("EL DISPOSITIVO YA SE ENCUENTRA CONECTADO\n");
-          print("ESTADO_CONECTADO", "EVENTO_CONEXION_MANUAL", "Paso a ESTADO_CONECTADO");
+          BTserial.write("ESTADO_CONECTADO\n");
           break;
 
         case EVENTO_TV_APAGADA:
-
-          print("ESTADO_CONECTADO", "EVENTO_TV_APAGADA", " Paso a ESTADO_CONSUMO_FANTASMA");
+          BTserial.write("ESTADO_CONSUMO_FANTASMA\n");
           actualizar_led(BRILLO_50_POR_CIENTO);
           contador = false;
           estado_actual = ESTADO_CONSUMO_FANTASMA;
@@ -403,8 +373,6 @@ void fsm() {
       switch (evento.tipo) {
         case EVENTO_BOTON_PULSADO:
 
-          BTserial.write("VERIFICANDO SENSORES, VUELVA A PRESIONAR EN UN INSTANTE\n");
-          print("ESTADO_AUSENCIA", "EVENTO_BOTON_PULSADO", "Paso a ESTADO_AUSENCIA");
           break;
 
         case EVENTO_PRESENCIA_DETECTADA:
@@ -413,13 +381,10 @@ void fsm() {
           actualizar_led(BRILLO_100_POR_CIENTO);
           estado_actual = ESTADO_CONECTADO;
           contador = false;
-          print("ESTADO_AUSENCIA", "EVENTO_PRESENCIA_DETECTADA", "Paso a ESTADO_CONECTADO");
+          BTserial.write("ESTADO_CONECTADO\n");
           break;
 
         case EVENTO_DESCONEXION_MANUAL:
-
-          BTserial.write("VERIFICANDO SENSORES, VUELVA A PRESIONAR EN UN INSTANTE\n");
-          print("ESTADO_AUSENCIA", "EVENTO_DESCONEXION_MANUAL", "Paso a ESTADO_AUSENCIA");
           break;
 
         case EVENTO_TV_APAGADA:
@@ -428,21 +393,18 @@ void fsm() {
           tiempo_inicio_contador = millis();
           titilar_led();
           estado_actual = ESTADO_DETECTANDO_INACTIVIDAD;
-          print("ESTADO_AUSENCIA", "EVENTO_TV_APAGADA", "Paso a ESTADO_DETECTANDO_INACTIVIDAD");
+          BTserial.write("ESTADO_DETECTANDO_INACTIVIDAD\n");
           break;
 
         case EVENTO_TV_PRENDIDA:
 
           estado_actual = ESTADO_CONSUMO_DESPERDICIADO;
           actualizar_led(BRILLO_50_POR_CIENTO);
-          BTserial.write(sensor_corriente.valor);
-          print("ESTADO_AUSENCIA", "EVENTO_TV_PRENDIDA", "Paso a ESTADO_CONSUMO_DESPERDICIADO");
+          BTserial.write("ESTADO_CONSUMO_DESPERDICIADO\n");
+          sonar_alarma(TMP_BUZZER2);
           break;
 
         case EVENTO_CONEXION_MANUAL:
-
-          BTserial.write("EL DISPOSITIVO YA SE ENCUENTRA CONECTADO");
-          print("ESTADO_AUSENCIA", "EVENTO_CONEXION_MANUAL", "Paso a ESTADO_AUSENCIA");
           break;
 
         default:
@@ -454,8 +416,7 @@ void fsm() {
       switch (evento.tipo) {
         case EVENTO_BOTON_PULSADO:
 
-          BTserial.write("NO SE PUEDE QUITAR LA CORRIENTE PORQUE LA TV DE ENCUENTRA ENCENDIDA\n");
-          print("ESTADO_CONSUMO_DESPERDICIADO", "EVENTO_BOTON_PULSADO", "Paso a ESTADO_CONSUMO_DESPERDICIADO");
+          BTserial.write("ESTADO_CONSUMO_DESPERDICIADO\n");
           break;
 
         case EVENTO_PRESENCIA_DETECTADA:
@@ -463,14 +424,13 @@ void fsm() {
           actualizar_rele(HIGH);
           actualizar_led(BRILLO_100_POR_CIENTO);
           contador = false;
-          print("ESTADO_CONSUMO_DESPERDICIADO", "EVENTO_PRESENCIA_DETECTADA", "Paso a ESTADO_CONECTADO");
+          BTserial.write("ESTADO_CONECTADO\n");
           estado_actual = ESTADO_CONECTADO;
           break;
 
         case EVENTO_DESCONEXION_MANUAL:
 
-          BTserial.write("NO SE PUEDE QUITAR LA CORRIENTE PORQUE LA TV DE ENCUENTRA ENCENDIDA\n");
-          print("ESTADO_CONSUMO_DESPERDICIADO", "EVENTO_DESCONEXION_MANUAL", "Paso a ESTADO_CONSUMO_DESPERDICIADO");
+          BTserial.write("ESTADO_CONSUMO_DESPERDICIADO\n");
           break;
 
         case EVENTO_TV_APAGADA:
@@ -480,13 +440,12 @@ void fsm() {
           tiempo_parpadeo_anterior = millis();
           titilar_led();
           estado_actual = ESTADO_DETECTANDO_INACTIVIDAD;
-          print("ESTADO_CONSUMO_DESPERDICIADO", "EVENTO_TV_APAGADA", "Paso a ESTADO_DETECTANDO_INACTIVIDAD");
+          BTserial.write("ESTADO_DETECTANDO_INACTIVIDAD\n");
           break;
 
         case EVENTO_CONEXION_MANUAL:
 
-          BTserial.write("EL DISPOSITIVO YA SE ENCUENTRA CONECTADO\n");
-          print("ESTADO_CONSUMO_DESPERDICIADO", "EVENTO_CONEXION_MANUAL", "Paso a CONSUMO_DESPERDICIADO");
+          BTserial.write("CONSUMO_DESPERDICIADO\n");
           break;
 
         default:
@@ -494,14 +453,14 @@ void fsm() {
           break;
       }
       break;
-    case ESTADO_DESCONECTADO:  // ----------------------------
+    case ESTADO_DESCONECTADO:  
       switch (evento.tipo) {
         case EVENTO_BOTON_PULSADO:
 
           actualizar_rele(HIGH);
           actualizar_led(BRILLO_100_POR_CIENTO);
           contador = false;
-          print("ESTADO_DESCONECTADO", "EVENTO_BOTON_PULSADO", "Paso a ESTADO_CONECTADO");
+          BTserial.write("ESTADO_CONECTADO\n");
           estado_actual = ESTADO_CONECTADO;
           break;
 
@@ -510,7 +469,7 @@ void fsm() {
           actualizar_rele(HIGH);
           actualizar_led(BRILLO_100_POR_CIENTO);
           contador = false;
-          print("ESTADO_DESCONECTADO", "EVENTO_PRESENCIA_DETECTADA", "Paso a ESTADO_CONECTADO");
+          BTserial.write("ESTADO_CONECTADO\n");        
           estado_actual = ESTADO_CONECTADO;
           break;
 
@@ -519,14 +478,13 @@ void fsm() {
           actualizar_rele(HIGH);
           actualizar_led(BRILLO_100_POR_CIENTO);
           contador = false;
-          print("ESTADO_DESCONECTADO", "EVENTO_CONEXION_MANUAL", "Paso a ESTADO_CONECTADO");
+          BTserial.write("ESTADO_CONECTADO\n");          
           estado_actual = ESTADO_CONECTADO;
           break;
 
         case EVENTO_DESCONEXION_MANUAL:
 
-          BTserial.write("EL DISPOSITIVO YA SE ENCUENTRA DESCONECTADO, SE ACTIVO EL MODO SUSPENDIDO\n");
-          print("ESTADO_DESCONECTADO", "EVENTO_DESCONEXION_MANUAL", "Paso a ESTADO_SUSPENDIDO");
+          BTserial.write("ESTADO_SUSPENDIDO\n");
           estado_actual = ESTADO_SUSPENDIDO;
           break;
 
@@ -535,14 +493,14 @@ void fsm() {
           break;
       }
       break;
-    case ESTADO_SUSPENDIDO:  // ---------------------------
+    case ESTADO_SUSPENDIDO:  
       switch (evento.tipo) {
         case EVENTO_BOTON_PULSADO:
 
           actualizar_rele(HIGH);
           actualizar_led(BRILLO_100_POR_CIENTO);
           contador = false;
-          print("ESTADO_SUSPENDIDO", "EVENTO_BOTON_PULSADO", "Paso a ESTADO_CONECTADO");
+          BTserial.write("ESTADO_CONECTADO\n");
           estado_actual = ESTADO_CONECTADO;
           break;
 
@@ -551,15 +509,12 @@ void fsm() {
           actualizar_rele(HIGH);
           actualizar_led(BRILLO_100_POR_CIENTO);
           contador = false;
-          print("ESTADO_SUSPENDIDO", "EVENTO_CONEXION_MANUAL", "Paso a ESTADO_CONECTADO");
+          BTserial.write("ESTADO_CONECTADO\n");
           estado_actual = ESTADO_CONECTADO;
           break;
 
         case EVENTO_DESCONEXION_MANUAL:
-
-          BTserial.write("EL DISPOSITIVO YA SE ENCUENTRA SUSPENDIDO\n");
-          print("ESTADO_SUSPENDIDO", "EVENTO_DESCONEXION_MANUAL", "Paso a ESTADO_SUSPENDIDO");
-          ;
+          
           break;
 
         default:
@@ -573,7 +528,6 @@ void fsm() {
 
           actualizar_rele(LOW);
           actualizar_led(BRILLO_0_POR_CIENTO);
-          print("ESTADO_DETECTANDO_INACTIVIDAD", "EVENTO_BOTON_PULSADO", "Paso a ESTADO_SUSPENDIDO");
           estado_actual = ESTADO_SUSPENDIDO;
           contador = false;
           break;
@@ -582,23 +536,21 @@ void fsm() {
 
           actualizar_rele(LOW);
           actualizar_led(BRILLO_0_POR_CIENTO);
-          print("ESTADO_DETECTANDO_INACTIVIDAD", "EVENTO_DESCONEXION_MANUAL", "Paso a ESTADO_SUSPENDIDO");
           estado_actual = ESTADO_SUSPENDIDO;
           contador = false;
           break;
 
         case EVENTO_TV_PRENDIDA:
 
-          BTserial.write(sensor_corriente.valor);
-          print("ESTADO_DETECTANDO_INACTIVIDAD", "EVENTO_TV_PRENDIDA", "Paso a ESTADO_CONSUMO_DESPERDICIADO");
+          BTserial.write("ESTADO_CONSUMO_DESPERDICIADO\n");
           estado_actual = ESTADO_CONSUMO_DESPERDICIADO;
+          sonar_alarma(TMP_BUZZER2);
           actualizar_led(BRILLO_50_POR_CIENTO);
           contador = false;
           break;
 
         case EVENTO_PRESENCIA_DETECTADA:
-
-          print("ESTADO_DETECTANDO_INACTIVIDAD", "EVENTO_PRESENCIA_DETECTADA", "Paso a ESTADO_CONECTADO");
+          BTserial.write("ESTADO_CONECTADO\n");
           estado_actual = ESTADO_CONECTADO;
           actualizar_rele(HIGH);
           actualizar_led(BRILLO_100_POR_CIENTO);
@@ -609,16 +561,15 @@ void fsm() {
 
           actualizar_rele(LOW);
           actualizar_led(BRILLO_0_POR_CIENTO);
-          sonar_alarma();
-          print("ESTADO_DETECTANDO_INACTIVIDAD", "EVENTO_TIMEOUT_INACTIVIDAD", "Paso a ESTADO_DESCONECTADO");
+          sonar_alarma(TMP_BUZZER);
+          BTserial.write("ESTADO_DESCONECTADO\n");
           estado_actual = ESTADO_DESCONECTADO;
           contador = false;
           break;
 
         case EVENTO_CONEXION_MANUAL:
 
-          BTserial.write("EL DISPOSITIVO YA SE ENCUENTRA CONECTADO\n");
-          print("ESTADO_DETECTANDO_INACTIVIDAD", "EVENTO_CONEXION_MANUAL", "Paso a ESTADO_DETECTANDO_INACTIVIDAD");
+          BTserial.write("ESTADO_DETECTANDO_INACTIVIDAD\n");
           break;
 
         default:
@@ -634,7 +585,6 @@ void fsm() {
 
           actualizar_rele(LOW);
           actualizar_led(BRILLO_0_POR_CIENTO);
-          print("ESTADO_CONSUMO_FANTASMA", "EVENTO_BOTON_PULSADO", "Paso a ESTADO_SUSPENDIDO");
           estado_actual = ESTADO_SUSPENDIDO;
           contador = false;
           break;
@@ -643,24 +593,21 @@ void fsm() {
 
           actualizar_rele(LOW);
           actualizar_led(BRILLO_0_POR_CIENTO);
-          print("ESTADO_CONSUMO_FANTASMA", "EVENTO_DESCONEXION_MANUAL", "Paso a ESTADO_SUSPENDIDO");
           estado_actual = ESTADO_SUSPENDIDO;
           contador = false;
           break;
 
         case EVENTO_TV_PRENDIDA:
 
-          BTserial.write(sensor_corriente.valor);
           actualizar_rele(HIGH);
           actualizar_led(BRILLO_100_POR_CIENTO);
           contador = false;
-          print("ESTADO_CONSUMO_FANTASMA", "EVENTO_TV_PRENDIDA", "Paso a ESTADO_CONECTADO");
+          BTserial.write("ESTADO_CONECTADO\n");
           estado_actual = ESTADO_CONECTADO;
           break;
 
         case EVENTO_AUSENCIA_DETECTADA:
-
-          print("ESTADO_CONSUMO_FANTASMA", "EVENTO_AUSENCIA_DETECTADA", "Paso a ESTADO_DETECTANDO_INACTIVIDAD");
+          BTserial.write("ESTADO_DETECTANDO_INACTIVIDAD\n");
           estado_actual = ESTADO_DETECTANDO_INACTIVIDAD;
           contador = true;
           tiempo_inicio_contador = millis();
@@ -669,8 +616,7 @@ void fsm() {
 
         case EVENTO_CONEXION_MANUAL:
 
-          BTserial.write("EL DISPOSITIVO YA SE ENCUENTRA CONECTADO\n");
-          print("ESTADO_CONSUMO_FANTASMA", "EVENTO_CONEXION_MANUAL", "Paso a ESTADO_CONSUMO_FANTASMA");
+          BTserial.write("ESTADO_CONSUMO_FANTASMA\n");
           break;
 
         default:
